@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Calendar, User, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { FileUpload } from "@/components/projects/FileUpload";
+import { ActivityLog } from "@/components/projects/ActivityLog";
 
 const statusColors = {
   planning: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Planejamento" },
@@ -264,6 +265,8 @@ const ProjectDetails = () => {
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="tasks">Tarefas ({tasks.length})</TabsTrigger>
               <TabsTrigger value="stages">Etapas ({stages.length})</TabsTrigger>
+              <TabsTrigger value="files">Arquivos</TabsTrigger>
+              <TabsTrigger value="activity">Atividades</TabsTrigger>
               <TabsTrigger value="communication">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Comunicação
@@ -362,6 +365,14 @@ const ProjectDetails = () => {
                   </Card>
                 ))
               )}
+            </TabsContent>
+
+            <TabsContent value="files">
+              <FileUpload projectId={id!} />
+            </TabsContent>
+
+            <TabsContent value="activity">
+              <ActivityLog projectId={id!} />
             </TabsContent>
 
             <TabsContent value="communication">

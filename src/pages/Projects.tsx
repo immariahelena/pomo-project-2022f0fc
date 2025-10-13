@@ -56,13 +56,14 @@ const Projects = () => {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
+    // Check user roles using new secure system
+    const { data: roles } = await supabase
+      .from("user_roles")
       .select("role")
-      .eq("id", session.user.id)
-      .single();
+      .eq("user_id", session.user.id);
 
-    setCanCreate(profile?.role === "admin" || profile?.role === "manager");
+    const userRoles = roles?.map(r => r.role) || [];
+    setCanCreate(userRoles.includes("admin") || userRoles.includes("manager"));
   };
 
   const fetchProjects = async () => {

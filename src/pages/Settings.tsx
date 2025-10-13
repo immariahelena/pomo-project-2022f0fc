@@ -40,10 +40,18 @@ const Settings = () => {
         .eq("id", user.id)
         .single();
 
+      // Fetch user role from user_roles table
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+
       setProfile({
         full_name: profileData?.full_name || "",
         email: user.email || "",
-        role: profileData?.role || "",
+        role: rolesData?.role || "collaborator",
       });
     } catch (error: any) {
       toast({
