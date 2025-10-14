@@ -128,11 +128,15 @@ const ProjectDetails = () => {
     try {
       const { data, error } = await supabase
         .from("messages")
-        .select("*, profiles:user_id(full_name)")
+        .select(`
+          *,
+          profiles!messages_user_id_fkey(full_name)
+        `)
         .eq("project_id", id)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
+      console.log("Mensagens carregadas:", data);
       setMessages(data || []);
     } catch (error: any) {
       console.error("Erro ao carregar mensagens:", error);

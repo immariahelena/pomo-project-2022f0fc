@@ -3,11 +3,56 @@ import { Home, Video, Trophy, Bell, Settings, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+
+    // Subscribe to realtime notifications
+    const channel = supabase
+      .channel("sidebar-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+
+      if (error) throw error;
+      setUnreadCount(count || 0);
+    } catch (error) {
+      console.error("Erro ao buscar notificações:", error);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -22,25 +67,33 @@ const Sidebar = () => {
     { icon: Home, path: "/dashboard", label: "Dashboard" },
     { icon: Video, path: "/projects", label: "Projetos" },
     { icon: Trophy, path: "/achievements", label: "Conquistas" },
-    { icon: Bell, path: "/notifications", label: "Notificações" },
+    { icon: Bell, path: "/notifications", label: "Notificações", badge: unreadCount },
   ];
 
   return (
     <aside className="w-20 bg-card border-r border-border flex flex-col items-center py-6 space-y-8">
       {menuItems.map((item) => (
-        <Button
-          key={item.path}
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(item.path)}
-          className={`p-3 rounded-lg transition-colors ${
-            location.pathname === item.path
-              ? "bg-primary text-primary-foreground"
-              : "hover:bg-sidebar-accent"
-          }`}
-        >
-          <item.icon className="h-6 w-6" />
-        </Button>
+        <div key={item.path} className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(item.path)}
+            className={`p-3 rounded-lg transition-colors ${
+              location.pathname === item.path
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-sidebar-accent"
+            }`}
+          >
+            <item.icon className="h-6 w-6" />
+          </Button>
+          {item.badge && item.badge > 0 && (
+            <Badge 
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-error text-error-foreground"
+            >
+              {item.badge > 99 ? "99+" : item.badge}
+            </Badge>
+          )}
+        </div>
       ))}
       
       <div className="flex-1" />
