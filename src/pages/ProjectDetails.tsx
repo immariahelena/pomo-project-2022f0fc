@@ -151,9 +151,19 @@ const ProjectDetails = () => {
 
       if (error) throw error;
 
+      // Create notification
+      await supabase.from("notifications").insert({
+        user_id: currentUser?.id,
+        title: "Nova mensagem enviada",
+        message: `Mensagem enviada no projeto: ${project.name}`,
+        type: "info",
+        link: `/projects/${id}`,
+      });
+
       setNewMessage("");
       toast({
         title: "Mensagem enviada",
+        description: `Mensagem enviada no projeto ${project.name}`,
       });
     } catch (error: any) {
       toast({
