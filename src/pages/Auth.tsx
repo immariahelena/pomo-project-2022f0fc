@@ -60,7 +60,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -72,6 +72,14 @@ const Auth = () => {
         });
 
         if (error) throw error;
+
+        // Assign default 'collaborator' role to new user
+        if (data.user) {
+          await supabase.from("user_roles").insert({
+            user_id: data.user.id,
+            role: "collaborator",
+          });
+        }
 
         toast({
           title: "Conta criada com sucesso!",
