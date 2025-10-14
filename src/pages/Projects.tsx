@@ -56,14 +56,15 @@ const Projects = () => {
       return;
     }
 
-    // Check user roles using new secure system
+    // Check user roles - allow all authenticated users to create projects
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id);
 
     const userRoles = roles?.map(r => r.role) || [];
-    setCanCreate(userRoles.includes("admin") || userRoles.includes("manager"));
+    // Allow all authenticated users to create projects
+    setCanCreate(true);
   };
 
   const fetchProjects = async () => {
