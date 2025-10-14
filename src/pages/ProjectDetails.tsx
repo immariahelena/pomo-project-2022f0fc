@@ -128,9 +128,9 @@ const ProjectDetails = () => {
     try {
       const { data, error } = await supabase
         .from("messages")
-        .select("*, profiles(full_name)")
+        .select("*")
         .eq("project_id", id)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Erro ao carregar mensagens:", error);
@@ -163,33 +163,33 @@ const ProjectDetails = () => {
           user_id: currentUser.id,
           content: messageContent,
         })
-        .select("*, profiles(full_name)")
+        .select()
         .single();
 
       if (error) throw error;
 
       // Adiciona a mensagem imediatamente à lista local
       if (newMessageData) {
-        setMessages((prev) => [...prev, newMessageData]);
+        setMessages((prev) => [newMessageData, ...prev]);
       }
 
       // Create notification
       await supabase.from("notifications").insert({
         user_id: currentUser.id,
-        title: "Nova mensagem enviada",
-        message: `Mensagem enviada no projeto: ${project.name}`,
+        title: "Nova atualização no projeto",
+        message: `Nova comunicação adicionada ao projeto: ${project.name}`,
         type: "info",
         link: `/projects/${id}`,
       });
 
       toast({
-        title: "Mensagem enviada",
-        description: `Mensagem enviada no projeto ${project.name}`,
+        title: "Atualização adicionada",
+        description: "Comunicação registrada no projeto",
       });
     } catch (error: any) {
-      setNewMessage(messageContent); // Restaura a mensagem em caso de erro
+      setNewMessage(messageContent);
       toast({
-        title: "Erro ao enviar mensagem",
+        title: "Erro ao adicionar atualização",
         description: error.message,
         variant: "destructive",
       });
@@ -410,49 +410,35 @@ const ProjectDetails = () => {
             <TabsContent value="communication">
               <Card className="h-[600px] flex flex-col">
                 <CardHeader>
-                  <CardTitle>Comunicação do Projeto</CardTitle>
+                  <CardTitle>Atualizações e Comunicações</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col">
-                  <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                  <div className="flex-1 overflow-y-auto space-y-3 mb-4">
                     {messages.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">
-                        Nenhuma mensagem ainda. Seja o primeiro a enviar!
+                        Nenhuma atualização ainda. Adicione a primeira comunicação!
                       </p>
                     ) : (
                       messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${
-                            message.user_id === currentUser?.id
-                              ? "justify-end"
-                              : "justify-start"
-                          }`}
-                        >
-                          <div
-                            className={`max-w-[70%] rounded-lg p-3 ${
-                              message.user_id === currentUser?.id
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                            }`}
-                          >
-                            <p className="text-xs font-semibold mb-1">
-                              {message.profiles?.full_name || "Usuário"}
-                            </p>
-                            <p className="text-sm">{message.content}</p>
-                            <p className="text-xs opacity-70 mt-1">
-                              {format(new Date(message.created_at), "dd/MM HH:mm", {
-                                locale: ptBR,
-                              })}
-                            </p>
-                          </div>
-                        </div>
+                        <Card key={message.id} className="border-l-4 border-l-primary">
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm flex-1">{message.content}</p>
+                              <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                {format(new Date(message.created_at), "dd/MM/yy HH:mm", {
+                                  locale: ptBR,
+                                })}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))
                     )}
                   </div>
 
                   <div className="flex gap-2">
                     <Textarea
-                      placeholder="Digite sua mensagem..."
+                      placeholder="Adicione uma atualização sobre o projeto..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={(e) => {
