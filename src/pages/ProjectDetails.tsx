@@ -128,48 +128,66 @@ const ProjectDetails = () => {
     try {
       const { data, error } = await supabase
         .from("messages")
-        .select(`
-          *,
-          profiles!messages_user_id_fkey(full_name)
-        `)
+        .select("*, profiles(full_name)")
         .eq("project_id", id)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao carregar mensagens:", error);
+        throw error;
+      }
+      
       console.log("Mensagens carregadas:", data);
       setMessages(data || []);
     } catch (error: any) {
       console.error("Erro ao carregar mensagens:", error);
+      toast({
+        title: "Erro ao carregar mensagens",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !currentUser) return;
+
+    const messageContent = newMessage.trim();
+    setNewMessage("");
 
     try {
-      const { error } = await supabase.from("messages").insert({
-        project_id: id,
-        user_id: currentUser?.id,
-        content: newMessage.trim(),
-      });
+      const { data: newMessageData, error } = await supabase
+        .from("messages")
+        .insert({
+          project_id: id,
+          user_id: currentUser.id,
+          content: messageContent,
+        })
+        .select("*, profiles(full_name)")
+        .single();
 
       if (error) throw error;
 
+      // Adiciona a mensagem imediatamente à lista local
+      if (newMessageData) {
+        setMessages((prev) => [...prev, newMessageData]);
+      }
+
       // Create notification
       await supabase.from("notifications").insert({
-        user_id: currentUser?.id,
+        user_id: currentUser.id,
         title: "Nova mensagem enviada",
         message: `Mensagem enviada no projeto: ${project.name}`,
         type: "info",
         link: `/projects/${id}`,
       });
 
-      setNewMessage("");
       toast({
         title: "Mensagem enviada",
         description: `Mensagem enviada no projeto ${project.name}`,
       });
     } catch (error: any) {
+      setNewMessage(messageContent); // Restaura a mensagem em caso de erro
       toast({
         title: "Erro ao enviar mensagem",
         description: error.message,
