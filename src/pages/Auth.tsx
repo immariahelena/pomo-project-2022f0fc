@@ -106,34 +106,9 @@ const Auth = () => {
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="w-8 h-8 text-primary-foreground"
-              >
-                <path
-                  d="M12 2L2 7L12 12L22 7L12 2Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 17L12 22L22 17"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 12L12 17L22 12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            <div className="w-12 h-12 bg-fundo-branco rounded-full flex items-center justify-center">
+              <img src="../../public/pomo.png " className="img"/>
+              
             </div>
           </div>
 

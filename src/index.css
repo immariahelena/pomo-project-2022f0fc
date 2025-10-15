@@ -12,6 +12,7 @@ All colors MUST be HSL.
     /* Base Colors */
     --background: 0 0% 96%;
     --foreground: 222 47% 11%;
+    --fundo-branco: #ffffff;
 
     /* Card */
     --card: 0 0% 100%;

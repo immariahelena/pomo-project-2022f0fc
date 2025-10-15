@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Video, Users, Clock, Shield } from "lucide-react";
+import "./index.css";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -34,8 +35,11 @@ const Index = () => {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Video className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">StudioFlow</span>
+            <div className="w-12 h-12 bg-fundo-branco rounded-full flex items-center justify-center">
+              <img src="../../public/pomo.png"  alt="" className="img" />
+            </div>
+            
+            <span className="text-2xl font-bold">Pomo Projects</span>
           </div>
           <div className="flex gap-4">
             <Button variant="ghost" onClick={() => navigate("/auth")}>
@@ -96,7 +100,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border bg-card">
         <div className="container mx-auto px-6 py-8 text-center text-muted-foreground">
-          <p>&copy; 2024 StudioFlow. Todos os direitos reservados.</p>
+          <p>&copy; 2025 PomoProjects.  Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>
