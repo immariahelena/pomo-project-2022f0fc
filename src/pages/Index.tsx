@@ -60,7 +60,7 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+         <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent pb-2">
           Gestão de Projetos Audiovisuais
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

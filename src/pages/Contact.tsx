@@ -21,17 +21,17 @@ const Contact = () => {
     {
       icon: Mail,
       title: "Email",
-      content: "contato@pomoprojects.com",
+      content: "pomodeourodigital@gmail.com",
     },
     {
       icon: Phone,
       title: "Telefone",
-      content: "+55 (11) 9999-9999",
+      content: "+55 (81) 99914-8726",
     },
     {
       icon: MapPin,
       title: "Endereço",
-      content: "São Paulo, SP - Brasil",
+      content: "Arcoverde, PE - Brasil",
     },
   ];
 

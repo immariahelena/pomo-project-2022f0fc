@@ -289,7 +289,7 @@ const Auth = () => {
                   </label>
                 </div>
                 <a href="#" className="text-sm text-primary hover:underline">
-                  Esquecer senha?
+                  Esqueceu a senha?
                 </a>
               </div>
             )}
