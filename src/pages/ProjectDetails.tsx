@@ -8,12 +8,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Calendar, User, MessageSquare, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, Calendar, User, MessageSquare, Send, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { FileLinkManager } from "@/components/projects/FileLinkManager";
 import { ActivityLog } from "@/components/projects/ActivityLog";
+import { z } from "zod";
 
 const statusColors = {
   planning: { bg: "bg-secondary", text: "text-secondary-foreground", label: "Planejamento" },
@@ -34,6 +51,17 @@ const ProjectDetails = () => {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [taskForm, setTaskForm] = useState({
+    title: "",
+    description: "",
+    status: "todo",
+    priority: "medium",
+    stage_id: "",
+    assigned_to: "",
+    due_date: "",
+  });
 
   useEffect(() => {
     checkAuth();
@@ -41,6 +69,7 @@ const ProjectDetails = () => {
     fetchStages();
     fetchTasks();
     fetchMessages();
+    fetchProfiles();
 
     // Subscribe to real-time messages
     const channel = supabase
@@ -146,6 +175,83 @@ const ProjectDetails = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .order("full_name");
+
+      if (error) throw error;
+      setProfiles(data || []);
+    } catch (error: any) {
+      console.error("Erro ao carregar perfis:", error);
+    }
+  };
+
+  const taskSchema = z.object({
+    title: z.string().trim().min(1, "Título é obrigatório").max(200, "Título muito longo"),
+    description: z.string().trim().max(1000, "Descrição muito longa").optional(),
+    status: z.enum(["todo", "in_progress", "completed"]),
+    priority: z.enum(["low", "medium", "high"]),
+    stage_id: z.string().optional(),
+    assigned_to: z.string().optional(),
+    due_date: z.string().optional(),
+  });
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const validatedData = taskSchema.parse(taskForm);
+
+      const { error } = await supabase.from("tasks").insert({
+        project_id: id,
+        title: validatedData.title,
+        description: validatedData.description || null,
+        status: validatedData.status,
+        priority: validatedData.priority,
+        stage_id: validatedData.stage_id || null,
+        assigned_to: validatedData.assigned_to || null,
+        due_date: validatedData.due_date || null,
+        created_by: currentUser?.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Tarefa criada com sucesso!",
+        description: "A tarefa foi adicionada ao projeto.",
+      });
+
+      setTaskDialogOpen(false);
+      setTaskForm({
+        title: "",
+        description: "",
+        status: "todo",
+        priority: "medium",
+        stage_id: "",
+        assigned_to: "",
+        due_date: "",
+      });
+      fetchTasks();
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao criar tarefa",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -339,6 +445,156 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="tasks" className="space-y-4">
+              <div className="flex justify-end mb-4">
+                <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Nova Tarefa
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Criar Nova Tarefa</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateTask} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="task-title">Título *</Label>
+                        <Input
+                          id="task-title"
+                          value={taskForm.title}
+                          onChange={(e) =>
+                            setTaskForm({ ...taskForm, title: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="task-description">Descrição</Label>
+                        <Textarea
+                          id="task-description"
+                          value={taskForm.description}
+                          onChange={(e) =>
+                            setTaskForm({ ...taskForm, description: e.target.value })
+                          }
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="task-stage">Etapa</Label>
+                          <Select
+                            value={taskForm.stage_id}
+                            onValueChange={(value) =>
+                              setTaskForm({ ...taskForm, stage_id: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma etapa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Nenhuma</SelectItem>
+                              {stages.map((stage) => (
+                                <SelectItem key={stage.id} value={stage.id}>
+                                  {stage.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="task-assigned">Atribuir a</Label>
+                          <Select
+                            value={taskForm.assigned_to}
+                            onValueChange={(value) =>
+                              setTaskForm({ ...taskForm, assigned_to: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um usuário" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Ninguém</SelectItem>
+                              {profiles.map((profile) => (
+                                <SelectItem key={profile.id} value={profile.id}>
+                                  {profile.full_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="task-status">Status</Label>
+                          <Select
+                            value={taskForm.status}
+                            onValueChange={(value) =>
+                              setTaskForm({ ...taskForm, status: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todo">A Fazer</SelectItem>
+                              <SelectItem value="in_progress">Em Andamento</SelectItem>
+                              <SelectItem value="completed">Concluída</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="task-priority">Prioridade</Label>
+                          <Select
+                            value={taskForm.priority}
+                            onValueChange={(value) =>
+                              setTaskForm({ ...taskForm, priority: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Baixa</SelectItem>
+                              <SelectItem value="medium">Média</SelectItem>
+                              <SelectItem value="high">Alta</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="task-due-date">Prazo</Label>
+                          <Input
+                            id="task-due-date"
+                            type="date"
+                            value={taskForm.due_date}
+                            onChange={(e) =>
+                              setTaskForm({ ...taskForm, due_date: e.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setTaskDialogOpen(false)}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button type="submit">Criar Tarefa</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
               {tasks.length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-12">
