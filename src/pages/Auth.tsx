@@ -114,18 +114,30 @@ const Auth = () => {
 
           {/* Navigation */}
           <nav className="flex gap-6 text-sm">
-            <a href="#" className="text-foreground hover:text-primary transition-colors">
+            <button
+              onClick={() => navigate("/")}
+              className="text-foreground hover:text-primary transition-colors"
+            >
               PÁGINA INICIAL
-            </a>
-            <a href="#" className="text-foreground hover:text-primary transition-colors">
+            </button>
+            <button
+              onClick={() => navigate("/about")}
+              className="text-foreground hover:text-primary transition-colors"
+            >
               SOBRE NÓS
-            </a>
-            <a href="#" className="text-foreground hover:text-primary transition-colors">
+            </button>
+            <button
+              onClick={() => navigate("/contact")}
+              className="text-foreground hover:text-primary transition-colors"
+            >
               CONTATO
-            </a>
-            <a href="#" className="text-primary font-semibold">
+            </button>
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-primary font-semibold"
+            >
               {isLogin ? "INSCREVER-SE" : "CONECTE-SE"}
-            </a>
+            </button>
           </nav>
 
           {/* Title */}
