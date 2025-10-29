@@ -41,7 +41,13 @@ const Index = () => {
             
             <span className="text-2xl font-bold">Pomo Projects</span>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            <Button variant="ghost" onClick={() => navigate("/about")}>
+              Sobre Nós
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/contact")}>
+              Contato
+            </Button>
             <Button variant="ghost" onClick={() => navigate("/auth")}>
               Entrar
             </Button>
