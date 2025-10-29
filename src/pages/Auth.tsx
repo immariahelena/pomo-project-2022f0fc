@@ -7,6 +7,23 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
+import { z } from "zod";
+
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
+  password: z.string().min(1, "Senha é obrigatória").max(128, "Senha muito longa"),
+});
+
+const signupSchema = z.object({
+  email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
+  password: z.string().min(8, "Senha deve ter no mínimo 8 caracteres").max(128, "Senha muito longa"),
+  confirmPassword: z.string(),
+  fullName: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome muito longo"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
+});
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -37,9 +54,22 @@ const Auth = () => {
 
     try {
       if (isLogin) {
+        // Validate login inputs
+        const validation = loginSchema.safeParse({ email, password });
+        if (!validation.success) {
+          const firstError = validation.error.errors[0];
+          toast({
+            title: "Erro de validação",
+            description: firstError.message,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: validation.data.email,
+          password: validation.data.password,
         });
 
         if (error) throw error;
@@ -51,22 +81,32 @@ const Auth = () => {
 
         navigate("/dashboard");
       } else {
-        if (password !== confirmPassword) {
+        // Validate signup inputs
+        const validation = signupSchema.safeParse({ 
+          email, 
+          password, 
+          confirmPassword, 
+          fullName 
+        });
+        
+        if (!validation.success) {
+          const firstError = validation.error.errors[0];
           toast({
-            title: "Erro",
-            description: "As senhas não coincidem",
+            title: "Erro de validação",
+            description: firstError.message,
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
 
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: validation.data.email,
+          password: validation.data.password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
             data: {
-              full_name: fullName,
+              full_name: validation.data.fullName,
             },
           },
         });

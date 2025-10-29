@@ -56,14 +56,7 @@ const Projects = () => {
       return;
     }
 
-    // Check user roles - allow all authenticated users to create projects
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
-
-    const userRoles = roles?.map(r => r.role) || [];
-    // Allow all authenticated users to create projects
+    // All authenticated users can create projects (enforced by RLS)
     setCanCreate(true);
   };
 
