@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { FileUpload } from "@/components/projects/FileUpload";
+import { FileLinkManager } from "@/components/projects/FileLinkManager";
 import { ActivityLog } from "@/components/projects/ActivityLog";
 
 const statusColors = {
@@ -298,6 +299,7 @@ const ProjectDetails = () => {
               <TabsTrigger value="tasks">Tarefas ({tasks.length})</TabsTrigger>
               <TabsTrigger value="stages">Etapas ({stages.length})</TabsTrigger>
               <TabsTrigger value="files">Arquivos</TabsTrigger>
+              <TabsTrigger value="links">Links</TabsTrigger>
               <TabsTrigger value="activity">Atividades</TabsTrigger>
               <TabsTrigger value="communication">
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -401,6 +403,10 @@ const ProjectDetails = () => {
 
             <TabsContent value="files">
               <FileUpload projectId={id!} />
+            </TabsContent>
+
+            <TabsContent value="links">
+              <FileLinkManager projectId={id!} />
             </TabsContent>
 
             <TabsContent value="activity">

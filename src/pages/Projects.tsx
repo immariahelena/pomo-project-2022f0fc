@@ -14,6 +14,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +43,9 @@ const Projects = () => {
   const [open, setOpen] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingProject, setEditingProject] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -86,24 +99,48 @@ const Projects = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase.from("projects").insert({
-        name: formData.name,
-        description: formData.description,
-        client_name: formData.clientName,
-        status: formData.status,
-        start_date: formData.startDate || null,
-        due_date: formData.dueDate || null,
-        created_by: user?.id,
-      });
+      if (editingProject) {
+        // Update existing project
+        const { error } = await supabase
+          .from("projects")
+          .update({
+            name: formData.name,
+            description: formData.description,
+            client_name: formData.clientName,
+            status: formData.status,
+            start_date: formData.startDate || null,
+            due_date: formData.dueDate || null,
+          })
+          .eq("id", editingProject.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Projeto criado com sucesso!",
-        description: "O projeto foi adicionado à lista.",
-      });
+        toast({
+          title: "Projeto atualizado com sucesso!",
+          description: "As alterações foram salvas.",
+        });
+      } else {
+        // Create new project
+        const { error } = await supabase.from("projects").insert({
+          name: formData.name,
+          description: formData.description,
+          client_name: formData.clientName,
+          status: formData.status,
+          start_date: formData.startDate || null,
+          due_date: formData.dueDate || null,
+          created_by: user?.id,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Projeto criado com sucesso!",
+          description: "O projeto foi adicionado à lista.",
+        });
+      }
 
       setOpen(false);
+      setEditingProject(null);
       setFormData({
         name: "",
         description: "",
@@ -115,10 +152,60 @@ const Projects = () => {
       fetchProjects();
     } catch (error: any) {
       toast({
-        title: "Erro ao criar projeto",
+        title: editingProject ? "Erro ao atualizar projeto" : "Erro ao criar projeto",
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleEdit = (projectId: string) => {
+    const project = projects.find((p) => p.id === projectId);
+    if (project) {
+      setEditingProject(project);
+      setFormData({
+        name: project.name,
+        description: project.description || "",
+        clientName: project.client_name || "",
+        status: project.status,
+        startDate: project.start_date || "",
+        dueDate: project.due_date || "",
+      });
+      setOpen(true);
+    }
+  };
+
+  const handleDelete = (projectId: string) => {
+    setProjectToDelete(projectId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Projeto excluído com sucesso!",
+        description: "O projeto foi removido da lista.",
+      });
+
+      fetchProjects();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir projeto",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
     }
   };
 
@@ -152,7 +239,23 @@ const Projects = () => {
             </div>
 
             {canCreate && (
-              <Dialog open={open} onOpenChange={setOpen}>
+              <Dialog 
+                open={open} 
+                onOpenChange={(isOpen) => {
+                  setOpen(isOpen);
+                  if (!isOpen) {
+                    setEditingProject(null);
+                    setFormData({
+                      name: "",
+                      description: "",
+                      clientName: "",
+                      status: "planning",
+                      startDate: "",
+                      dueDate: "",
+                    });
+                  }
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button className="gap-2">
                     <Plus className="h-4 w-4" />
@@ -161,7 +264,9 @@ const Projects = () => {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Criar Novo Projeto</DialogTitle>
+                    <DialogTitle>
+                      {editingProject ? "Editar Projeto" : "Criar Novo Projeto"}
+                    </DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
@@ -252,17 +357,40 @@ const Projects = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setOpen(false)}
+                        onClick={() => {
+                          setOpen(false);
+                          setEditingProject(null);
+                        }}
                       >
                         Cancelar
                       </Button>
-                      <Button type="submit">Criar Projeto</Button>
+                      <Button type="submit">
+                        {editingProject ? "Salvar Alterações" : "Criar Projeto"}
+                      </Button>
                     </div>
                   </form>
                 </DialogContent>
               </Dialog>
             )}
           </div>
+
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.
+                  Todos os dados relacionados ao projeto também serão excluídos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {filteredProjects.length === 0 ? (
             <div className="text-center py-12">
@@ -283,6 +411,8 @@ const Projects = () => {
                   status={project.status}
                   dueDate={project.due_date}
                   description={project.description}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>
