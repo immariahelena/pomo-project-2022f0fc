@@ -12,7 +12,6 @@ import { ArrowLeft, Calendar, User, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileUpload } from "@/components/projects/FileUpload";
 import { FileLinkManager } from "@/components/projects/FileLinkManager";
 import { ActivityLog } from "@/components/projects/ActivityLog";
 
@@ -298,7 +297,6 @@ const ProjectDetails = () => {
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="tasks">Tarefas ({tasks.length})</TabsTrigger>
               <TabsTrigger value="stages">Etapas ({stages.length})</TabsTrigger>
-              <TabsTrigger value="files">Arquivos</TabsTrigger>
               <TabsTrigger value="links">Links</TabsTrigger>
               <TabsTrigger value="activity">Atividades</TabsTrigger>
               <TabsTrigger value="communication">
@@ -399,10 +397,6 @@ const ProjectDetails = () => {
                   </Card>
                 ))
               )}
-            </TabsContent>
-
-            <TabsContent value="files">
-              <FileUpload projectId={id!} />
             </TabsContent>
 
             <TabsContent value="links">
