@@ -45,7 +45,6 @@ const ProjectDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [project, setProject] = useState<any>(null);
-  const [stages, setStages] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -62,11 +61,11 @@ const ProjectDetails = () => {
     assigned_to: "",
     due_date: "",
   });
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkAuth();
     fetchProjectDetails();
-    fetchStages();
     fetchTasks();
     fetchMessages();
     fetchProfiles();
@@ -120,21 +119,6 @@ const ProjectDetails = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchStages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("project_stages")
-        .select("*")
-        .eq("project_id", id)
-        .order("order_index");
-
-      if (error) throw error;
-      setStages(data || []);
-    } catch (error: any) {
-      console.error("Erro ao carregar etapas:", error);
     }
   };
 
@@ -323,12 +307,17 @@ const ProjectDetails = () => {
 
   const statusInfo = statusColors[project.status as keyof typeof statusColors];
 
+  const filteredTasks = tasks.filter((task) =>
+    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar />
       
       <main className="flex-1 overflow-auto">
-        <Header />
+        <Header onSearch={setSearchQuery} />
 
         <div className="p-8 space-y-6">
           <div className="flex items-center gap-4">
@@ -401,8 +390,7 @@ const ProjectDetails = () => {
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="tasks">Tarefas ({tasks.length})</TabsTrigger>
-              <TabsTrigger value="stages">Etapas ({stages.length})</TabsTrigger>
+              <TabsTrigger value="tasks">Tarefas ({filteredTasks.length})</TabsTrigger>
               <TabsTrigger value="links">Links</TabsTrigger>
               <TabsTrigger value="activity">Atividades</TabsTrigger>
               <TabsTrigger value="communication">
@@ -425,14 +413,10 @@ const ProjectDetails = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold mb-2">Estatísticas</h3>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-2xl font-bold">{tasks.length}</p>
                         <p className="text-sm text-muted-foreground">Tarefas</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">{stages.length}</p>
-                        <p className="text-sm text-muted-foreground">Etapas</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{messages.length}</p>
@@ -483,27 +467,17 @@ const ProjectDetails = () => {
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="task-stage">Etapa</Label>
-                          <Select
-                            value={taskForm.stage_id}
-                            onValueChange={(value) =>
-                              setTaskForm({ ...taskForm, stage_id: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione uma etapa" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="">Nenhuma</SelectItem>
-                              {stages.map((stage) => (
-                                <SelectItem key={stage.id} value={stage.id}>
-                                  {stage.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="task-stage">Etapa</Label>
+                        <Input
+                          id="task-stage"
+                          value={taskForm.stage_id}
+                          onChange={(e) =>
+                            setTaskForm({ ...taskForm, stage_id: e.target.value })
+                          }
+                          placeholder="Digite o nome da etapa (opcional)"
+                        />
+                      </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="task-assigned">Atribuir a</Label>
@@ -595,14 +569,16 @@ const ProjectDetails = () => {
                 </Dialog>
               </div>
 
-              {tasks.length === 0 ? (
+              {filteredTasks.length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-12">
-                    <p className="text-muted-foreground">Nenhuma tarefa criada ainda</p>
+                    <p className="text-muted-foreground">
+                      {searchQuery ? "Nenhuma tarefa encontrada" : "Nenhuma tarefa criada ainda"}
+                    </p>
                   </CardContent>
                 </Card>
               ) : (
-                tasks.map((task) => (
+                filteredTasks.map((task) => (
                   <Card key={task.id}>
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between">
@@ -620,34 +596,6 @@ const ProjectDetails = () => {
                           )}
                         </div>
                         <Badge variant="secondary">{task.status}</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="stages" className="space-y-4">
-              {stages.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <p className="text-muted-foreground">Nenhuma etapa criada ainda</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                stages.map((stage) => (
-                  <Card key={stage.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold">{stage.name}</h3>
-                          {stage.description && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {stage.description}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant="secondary">{stage.status}</Badge>
                       </div>
                     </CardContent>
                   </Card>
