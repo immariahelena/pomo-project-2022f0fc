@@ -57,7 +57,6 @@ const ProjectDetails = () => {
     description: "",
     status: "todo",
     priority: "medium",
-    stage_id: "",
     assigned_to: "",
     due_date: "",
   });
@@ -181,13 +180,21 @@ const ProjectDetails = () => {
     description: z.string().trim().max(1000, "Descrição muito longa").optional(),
     status: z.enum(["todo", "in_progress", "completed"]),
     priority: z.enum(["low", "medium", "high"]),
-    stage_id: z.string().optional(),
-    assigned_to: z.string().optional(),
+    assigned_to: z.string().uuid().optional().or(z.literal("")),
     due_date: z.string().optional(),
   });
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!currentUser) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para criar tarefas.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const validatedData = taskSchema.parse(taskForm);
@@ -198,10 +205,10 @@ const ProjectDetails = () => {
         description: validatedData.description || null,
         status: validatedData.status,
         priority: validatedData.priority,
-        stage_id: validatedData.stage_id || null,
+        stage_id: null,
         assigned_to: validatedData.assigned_to || null,
         due_date: validatedData.due_date || null,
-        created_by: currentUser?.id,
+        created_by: currentUser.id,
       });
 
       if (error) throw error;
@@ -217,7 +224,6 @@ const ProjectDetails = () => {
         description: "",
         status: "todo",
         priority: "medium",
-        stage_id: "",
         assigned_to: "",
         due_date: "",
       });
@@ -230,6 +236,7 @@ const ProjectDetails = () => {
           variant: "destructive",
         });
       } else {
+        console.error("Erro ao criar tarefa:", error);
         toast({
           title: "Erro ao criar tarefa",
           description: error.message,
@@ -466,41 +473,27 @@ const ProjectDetails = () => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="task-stage">Etapa</Label>
-                        <Input
-                          id="task-stage"
-                          value={taskForm.stage_id}
-                          onChange={(e) =>
-                            setTaskForm({ ...taskForm, stage_id: e.target.value })
+                        <Label htmlFor="task-assigned">Atribuir a</Label>
+                        <Select
+                          value={taskForm.assigned_to}
+                          onValueChange={(value) =>
+                            setTaskForm({ ...taskForm, assigned_to: value })
                           }
-                          placeholder="Digite o nome da etapa (opcional)"
-                        />
-                      </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="task-assigned">Atribuir a</Label>
-                          <Select
-                            value={taskForm.assigned_to}
-                            onValueChange={(value) =>
-                              setTaskForm({ ...taskForm, assigned_to: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um usuário" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="">Ninguém</SelectItem>
-                              {profiles.map((profile) => (
-                                <SelectItem key={profile.id} value={profile.id}>
-                                  {profile.full_name}
-                                </SelectItem>
-                              ))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um usuário" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Ninguém</SelectItem>
+                            {profiles.map((profile) => (
+                              <SelectItem key={profile.id} value={profile.id}>
+                                {profile.full_name}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
 
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
