@@ -125,12 +125,29 @@ const ProjectDetails = () => {
     try {
       const { data, error } = await supabase
         .from("tasks")
-        .select("*, profiles:assigned_to(full_name)")
+        .select("*")
         .eq("project_id", id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTasks(data || []);
+      
+      // Buscar perfis dos usuários atribuídos
+      const tasksWithProfiles = await Promise.all(
+        (data || []).map(async (task) => {
+          if (task.assigned_to) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", task.assigned_to)
+              .single();
+            
+            return { ...task, profiles: profile };
+          }
+          return task;
+        })
+      );
+      
+      setTasks(tasksWithProfiles);
     } catch (error: any) {
       console.error("Erro ao carregar tarefas:", error);
     }
