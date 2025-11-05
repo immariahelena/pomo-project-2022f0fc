@@ -476,22 +476,22 @@ const ProjectDetails = () => {
                       <div className="space-y-2">
                         <Label htmlFor="task-assigned">Atribuir a</Label>
                         <Select
-                          value={taskForm.assigned_to}
+                          value={taskForm.assigned_to || "unassigned"}
                           onValueChange={(value) =>
-                            setTaskForm({ ...taskForm, assigned_to: value })
+                            setTaskForm({ ...taskForm, assigned_to: value === "unassigned" ? "" : value })
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um usuário" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Ninguém</SelectItem>
+                            <SelectItem value="unassigned">Ninguém</SelectItem>
                             {profiles.map((profile) => (
                               <SelectItem key={profile.id} value={profile.id}>
                                 {profile.full_name}
                               </SelectItem>
                             ))}
-                            </SelectContent>
+                          </SelectContent>
                           </Select>
                         </div>
 
