@@ -82,7 +82,7 @@ const ProjectDetails = () => {
     fetchProfiles();
 
     // Subscribe to real-time messages
-    const channel = supabase
+    const messagesChannel = supabase
       .channel(`project-${id}-messages`)
       .on(
         "postgres_changes",
@@ -98,8 +98,26 @@ const ProjectDetails = () => {
       )
       .subscribe();
 
+    // Subscribe to real-time tasks updates
+    const tasksChannel = supabase
+      .channel(`project-${id}-tasks`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `project_id=eq.${id}`,
+        },
+        (payload) => {
+          fetchTasks();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(tasksChannel);
     };
   }, [id]);
 
