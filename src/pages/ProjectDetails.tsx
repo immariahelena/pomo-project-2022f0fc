@@ -18,13 +18,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Calendar, User, MessageSquare, Send, Plus } from "lucide-react";
+import { ArrowLeft, Calendar, User, MessageSquare, Send, Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -52,6 +62,8 @@ const ProjectDetails = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
@@ -216,26 +228,50 @@ const ProjectDetails = () => {
     try {
       const validatedData = taskSchema.parse(taskForm);
 
-      const { error } = await supabase.from("tasks").insert({
-        project_id: id,
-        title: validatedData.title,
-        description: validatedData.description || null,
-        status: validatedData.status,
-        priority: validatedData.priority,
-        stage_id: null,
-        assigned_to: validatedData.assigned_to || null,
-        due_date: validatedData.due_date || null,
-        created_by: currentUser.id,
-      });
+      if (editingTask) {
+        // Atualizar tarefa existente
+        const { error } = await supabase
+          .from("tasks")
+          .update({
+            title: validatedData.title,
+            description: validatedData.description || null,
+            status: validatedData.status,
+            priority: validatedData.priority,
+            assigned_to: validatedData.assigned_to || null,
+            due_date: validatedData.due_date || null,
+          })
+          .eq("id", editingTask.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Tarefa criada com sucesso!",
-        description: "A tarefa foi adicionada ao projeto.",
-      });
+        toast({
+          title: "Tarefa atualizada!",
+          description: "A tarefa foi atualizada com sucesso.",
+        });
+      } else {
+        // Criar nova tarefa
+        const { error } = await supabase.from("tasks").insert({
+          project_id: id,
+          title: validatedData.title,
+          description: validatedData.description || null,
+          status: validatedData.status,
+          priority: validatedData.priority,
+          stage_id: null,
+          assigned_to: validatedData.assigned_to || null,
+          due_date: validatedData.due_date || null,
+          created_by: currentUser.id,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Tarefa criada com sucesso!",
+          description: "A tarefa foi adicionada ao projeto.",
+        });
+      }
 
       setTaskDialogOpen(false);
+      setEditingTask(null);
       setTaskForm({
         title: "",
         description: "",
@@ -253,14 +289,67 @@ const ProjectDetails = () => {
           variant: "destructive",
         });
       } else {
-        console.error("Erro ao criar tarefa:", error);
+        console.error("Erro ao salvar tarefa:", error);
         toast({
-          title: "Erro ao criar tarefa",
+          title: editingTask ? "Erro ao atualizar tarefa" : "Erro ao criar tarefa",
           description: error.message,
           variant: "destructive",
         });
       }
     }
+  };
+
+  const handleEditTask = (task: any) => {
+    setEditingTask(task);
+    setTaskForm({
+      title: task.title,
+      description: task.description || "",
+      status: task.status,
+      priority: task.priority,
+      assigned_to: task.assigned_to || "",
+      due_date: task.due_date || "",
+    });
+    setTaskDialogOpen(true);
+  };
+
+  const handleDeleteTask = async () => {
+    if (!deleteTaskId) return;
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", deleteTaskId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Tarefa excluída",
+        description: "A tarefa foi removida com sucesso.",
+      });
+
+      setDeleteTaskId(null);
+      fetchTasks();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir tarefa",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCloseTaskDialog = () => {
+    setTaskDialogOpen(false);
+    setEditingTask(null);
+    setTaskForm({
+      title: "",
+      description: "",
+      status: "todo",
+      priority: "medium",
+      assigned_to: "",
+      due_date: "",
+    });
   };
 
   const handleSendMessage = async () => {
@@ -454,7 +543,7 @@ const ProjectDetails = () => {
 
             <TabsContent value="tasks" className="space-y-4">
               <div className="flex justify-end mb-4">
-                <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+                <Dialog open={taskDialogOpen} onOpenChange={handleCloseTaskDialog}>
                   <DialogTrigger asChild>
                     <Button className="gap-2">
                       <Plus className="h-4 w-4" />
@@ -463,7 +552,9 @@ const ProjectDetails = () => {
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                      <DialogTitle>Criar Nova Tarefa</DialogTitle>
+                      <DialogTitle>
+                        {editingTask ? "Editar Tarefa" : "Criar Nova Tarefa"}
+                      </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleCreateTask} className="space-y-4">
                       <div className="space-y-2">
@@ -568,11 +659,13 @@ const ProjectDetails = () => {
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => setTaskDialogOpen(false)}
+                          onClick={handleCloseTaskDialog}
                         >
                           Cancelar
                         </Button>
-                        <Button type="submit">Criar Tarefa</Button>
+                        <Button type="submit">
+                          {editingTask ? "Salvar Alterações" : "Criar Tarefa"}
+                        </Button>
                       </div>
                     </form>
                   </DialogContent>
@@ -591,8 +684,8 @@ const ProjectDetails = () => {
                 filteredTasks.map((task) => (
                   <Card key={task.id}>
                     <CardContent className="pt-6">
-                      <div className="flex items-start justify-between">
-                        <div>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
                           <h3 className="font-semibold">{task.title}</h3>
                           {task.description && (
                             <p className="text-sm text-muted-foreground mt-1">
@@ -605,12 +698,45 @@ const ProjectDetails = () => {
                             </p>
                           )}
                         </div>
-                        <Badge variant="secondary">{task.status}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{task.status}</Badge>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEditTask(task)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setDeleteTaskId(task.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))
               )}
+              
+              <AlertDialog open={!!deleteTaskId} onOpenChange={() => setDeleteTaskId(null)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteTask}>
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
 
             <TabsContent value="links">
