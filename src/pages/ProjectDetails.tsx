@@ -73,6 +73,9 @@ const ProjectDetails = () => {
     due_date: "",
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingMessage, setEditingMessage] = useState<any>(null);
+  const [editMessageContent, setEditMessageContent] = useState("");
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -411,6 +414,66 @@ const ProjectDetails = () => {
       setNewMessage(messageContent);
       toast({
         title: "Erro ao adicionar atualização",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditMessage = (message: any) => {
+    setEditingMessage(message);
+    setEditMessageContent(message.content);
+  };
+
+  const handleUpdateMessage = async () => {
+    if (!editMessageContent.trim() || !editingMessage) return;
+
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .update({ content: editMessageContent })
+        .eq("id", editingMessage.id);
+
+      if (error) throw error;
+
+      fetchMessages();
+      setEditingMessage(null);
+      setEditMessageContent("");
+
+      toast({
+        title: "Mensagem atualizada",
+        description: "A comunicação foi atualizada com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar mensagem",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!deleteMessageId) return;
+
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", deleteMessageId);
+
+      if (error) throw error;
+
+      fetchMessages();
+      setDeleteMessageId(null);
+
+      toast({
+        title: "Mensagem excluída",
+        description: "A comunicação foi removida com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir mensagem",
         description: error.message,
         variant: "destructive",
       });
@@ -782,11 +845,33 @@ const ProjectDetails = () => {
                           <CardContent className="pt-4">
                             <div className="flex items-start justify-between gap-2">
                               <p className="text-sm flex-1">{message.content}</p>
-                              <p className="text-xs text-muted-foreground whitespace-nowrap">
-                                {format(new Date(message.created_at), "dd/MM/yy HH:mm", {
-                                  locale: ptBR,
-                                })}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {format(new Date(message.created_at), "dd/MM/yy HH:mm", {
+                                    locale: ptBR,
+                                  })}
+                                </p>
+                                {currentUser?.id === message.user_id && (
+                                  <>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-7 w-7"
+                                      onClick={() => handleEditMessage(message)}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-7 w-7"
+                                      onClick={() => setDeleteMessageId(message.id)}
+                                    >
+                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -813,6 +898,58 @@ const ProjectDetails = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Edit Message Dialog */}
+              <Dialog open={!!editingMessage} onOpenChange={(open) => !open && setEditingMessage(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Editar Mensagem</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Textarea
+                      value={editMessageContent}
+                      onChange={(e) => setEditMessageContent(e.target.value)}
+                      rows={4}
+                      placeholder="Edite sua mensagem..."
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingMessage(null);
+                          setEditMessageContent("");
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleUpdateMessage}>
+                        Salvar
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Delete Message Dialog */}
+              <AlertDialog open={!!deleteMessageId} onOpenChange={(open) => !open && setDeleteMessageId(null)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir esta mensagem? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteMessage}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
           </Tabs>
         </div>
