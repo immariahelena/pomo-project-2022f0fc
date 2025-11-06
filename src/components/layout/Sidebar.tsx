@@ -1,16 +1,18 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Video, Trophy, Bell, Settings, LogOut } from "lucide-react";
+import { Home, Video, Trophy, Bell, Settings, LogOut, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
+  const { isAdmin } = useUserRole();
 
   useEffect(() => {
     fetchUnreadCount();
@@ -70,6 +72,10 @@ const Sidebar = () => {
     { icon: Bell, path: "/notifications", label: "Notificações", badge: unreadCount },
   ];
 
+  const adminItems = [
+    { icon: Shield, path: "/admin/users", label: "Admin" },
+  ];
+
   return (
     <aside className="w-20 bg-card border-r border-border flex flex-col items-center py-6 space-y-8">
       {menuItems.map((item) => (
@@ -93,6 +99,23 @@ const Sidebar = () => {
               {item.badge > 99 ? "99+" : item.badge}
             </Badge>
           )}
+        </div>
+      ))}
+      
+      {isAdmin && adminItems.map((item) => (
+        <div key={item.path}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(item.path)}
+            className={`p-3 rounded-lg transition-colors ${
+              location.pathname === item.path
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-sidebar-accent"
+            }`}
+          >
+            <item.icon className="h-6 w-6" />
+          </Button>
         </div>
       ))}
       
