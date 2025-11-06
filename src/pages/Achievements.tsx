@@ -11,6 +11,7 @@ const Achievements = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({
     totalProjects: 0,
     completedProjects: 0,
@@ -108,6 +109,12 @@ const Achievements = () => {
     },
   ];
 
+  const filteredAchievements = achievements.filter(
+    (achievement) =>
+      achievement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      achievement.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -121,7 +128,7 @@ const Achievements = () => {
       <Sidebar />
       
       <main className="flex-1 overflow-auto">
-        <Header />
+        <Header onSearch={setSearchQuery} />
 
         <div className="p-8 space-y-6">
           <div>
@@ -176,7 +183,14 @@ const Achievements = () => {
 
           {/* Achievements Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {achievements.map((achievement) => (
+            {filteredAchievements.length === 0 ? (
+              <div className="col-span-2 text-center py-12">
+                <p className="text-muted-foreground">
+                  Nenhuma conquista encontrada com esse termo
+                </p>
+              </div>
+            ) : (
+              filteredAchievements.map((achievement) => (
               <Card
                 key={achievement.id}
                 className={achievement.unlocked ? "border-primary/50" : "opacity-60"}
@@ -222,7 +236,7 @@ const Achievements = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )))}
           </div>
         </div>
       </main>

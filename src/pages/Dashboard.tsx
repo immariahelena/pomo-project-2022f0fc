@@ -18,6 +18,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({
     total: 0,
     finalizados: 0,
@@ -87,6 +88,12 @@ const Dashboard = () => {
     }
   };
 
+  const filteredProjects = projects.filter(
+    (project) =>
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.client_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -100,7 +107,7 @@ const Dashboard = () => {
       <Sidebar />
       
       <main className="flex-1 overflow-auto">
-        <Header />
+        <Header onSearch={setSearchQuery} />
 
         {/* Dashboard Content */}
         <div className="p-8 space-y-8">
@@ -157,13 +164,15 @@ const Dashboard = () => {
               <CardTitle>Projetos Recentes</CardTitle>
             </CardHeader>
             <CardContent>
-              {projects.length === 0 ? (
+              {filteredProjects.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Nenhum projeto cadastrado ainda
+                  {searchQuery
+                    ? "Nenhum projeto encontrado com esse termo"
+                    : "Nenhum projeto cadastrado ainda"}
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {projects.map((project) => (
+                  {filteredProjects.map((project) => (
                     <ProjectCard
                       key={project.id}
                       id={project.id}

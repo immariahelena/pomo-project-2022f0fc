@@ -54,6 +54,7 @@ const UserManagement = () => {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [newRole, setNewRole] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -232,6 +233,13 @@ const UserManagement = () => {
     }
   };
 
+  const filteredUsers = users.filter(
+    (user) =>
+      user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (roleLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -245,7 +253,7 @@ const UserManagement = () => {
       <Sidebar />
       
       <main className="flex-1 overflow-auto">
-        <Header />
+        <Header onSearch={setSearchQuery} />
 
         <div className="p-8 space-y-6">
           <div className="flex items-center justify-between">
@@ -268,9 +276,11 @@ const UserManagement = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Nenhum usuário encontrado
+                  {searchQuery
+                    ? "Nenhum usuário encontrado com esse termo"
+                    : "Nenhum usuário encontrado"}
                 </p>
               ) : (
                 <Table>
@@ -284,7 +294,7 @@ const UserManagement = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           {user.full_name}

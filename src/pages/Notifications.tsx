@@ -25,6 +25,7 @@ const Notifications = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -151,12 +152,18 @@ const Notifications = () => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const filteredNotifications = notifications.filter(
+    (notification) =>
+      notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      notification.message.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar />
       
       <main className="flex-1 overflow-auto">
-        <Header />
+        <Header onSearch={setSearchQuery} />
 
         <div className="p-8 space-y-6">
           <div className="flex items-center justify-between">
@@ -177,18 +184,20 @@ const Notifications = () => {
             )}
           </div>
 
-          {notifications.length === 0 ? (
+          {filteredNotifications.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Bell className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg text-muted-foreground">
-                  Nenhuma notificação ainda
+                  {searchQuery
+                    ? "Nenhuma notificação encontrada com esse termo"
+                    : "Nenhuma notificação ainda"}
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
-              {notifications.map((notification) => (
+              {filteredNotifications.map((notification) => (
                 <Card
                   key={notification.id}
                   className={`cursor-pointer transition-colors ${
