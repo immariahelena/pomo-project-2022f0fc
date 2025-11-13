@@ -1,21 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 
 const Contact = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
 
   const contactInfo = [
     {
@@ -34,43 +22,6 @@ const Contact = () => {
       content: "Arcoverde, PE - Brasil",
     },
   ];
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validação básica
-    if (!formData.name || !formData.email || !formData.message) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Aqui você implementaria o envio real do formulário
-    toast({
-      title: "Mensagem enviada!",
-      description: "Obrigado pelo contato. Responderemos em breve.",
-    });
-
-    // Limpar formulário
-    setFormData({
-      name: "",
-      email: "",
-      subject: "",
-      message: "",
-    });
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,69 +72,6 @@ const Contact = () => {
                 <p className="text-muted-foreground">{info.content}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Form */}
-      <section className="container mx-auto px-6 py-12">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-card border border-border rounded-2xl p-8 md:p-12">
-            <h2 className="text-3xl font-bold mb-6 text-center">Envie sua Mensagem</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome *</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="Seu nome"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subject">Assunto</Label>
-                <Input
-                  id="subject"
-                  name="subject"
-                  placeholder="Assunto da mensagem"
-                  value={formData.subject}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="message">Mensagem *</Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  placeholder="Escreva sua mensagem aqui..."
-                  rows={6}
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <Button type="submit" size="lg" className="w-full">
-                Enviar Mensagem
-              </Button>
-            </form>
           </div>
         </div>
       </section>
