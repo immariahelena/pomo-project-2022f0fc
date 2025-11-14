@@ -74,37 +74,23 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name");
-
-      if (profilesError) throw profilesError;
-
-      const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (usersError) throw usersError;
+      if (!session) {
+        throw new Error("Usuário não autenticado");
+      }
 
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      if (rolesError) throw rolesError;
-
-      const combinedUsers: UserWithRole[] = usersData.users.map((user) => {
-        const profile = profilesData?.find((p) => p.id === user.id);
-        const roleRecord = rolesData?.find((r) => r.user_id === user.id);
-
-        return {
-          id: user.id,
-          email: user.email || "",
-          full_name: profile?.full_name || "Sem nome",
-          role: roleRecord?.role || "collaborator",
-          created_at: user.created_at,
-        };
+      const { data, error } = await supabase.functions.invoke('list-users', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
-      setUsers(combinedUsers);
+      if (error) throw error;
+
+      setUsers(data.users);
     } catch (error: any) {
+      console.error("Erro ao carregar usuários:", error);
       toast({
         title: "Erro ao carregar usuários",
         description: error.message,
