@@ -80,20 +80,25 @@ const UserManagement = () => {
         throw new Error("Usuário não autenticado");
       }
 
+      console.log("Chamando edge function list-users...");
       const { data, error } = await supabase.functions.invoke('list-users', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro da edge function:", error);
+        throw error;
+      }
 
+      console.log("Usuários carregados:", data.users);
       setUsers(data.users);
     } catch (error: any) {
       console.error("Erro ao carregar usuários:", error);
       toast({
         title: "Erro ao carregar usuários",
-        description: error.message,
+        description: error.message || "Erro desconhecido ao carregar usuários",
         variant: "destructive",
       });
     } finally {
@@ -103,6 +108,8 @@ const UserManagement = () => {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
+      console.log("Alterando role do usuário:", userId, "para:", newRole);
+      
       const { data: existingRole } = await supabase
         .from("user_roles")
         .select("id")
@@ -110,13 +117,18 @@ const UserManagement = () => {
         .single();
 
       if (existingRole) {
+        console.log("Atualizando role existente...");
         const { error } = await supabase
           .from("user_roles")
           .update({ role: newRole as "admin" | "manager" | "collaborator" | "client" })
           .eq("user_id", userId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao atualizar:", error);
+          throw error;
+        }
       } else {
+        console.log("Inserindo nova role...");
         const { error } = await supabase
           .from("user_roles")
           .insert({ 
@@ -124,7 +136,10 @@ const UserManagement = () => {
             role: newRole as "admin" | "manager" | "collaborator" | "client" 
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao inserir:", error);
+          throw error;
+        }
       }
 
       toast({
@@ -135,9 +150,10 @@ const UserManagement = () => {
       setEditingUserId(null);
       fetchUsers();
     } catch (error: any) {
+      console.error("Erro ao alterar role:", error);
       toast({
         title: "Erro ao atualizar função",
-        description: error.message,
+        description: error.message || "Erro desconhecido",
         variant: "destructive",
       });
     }
