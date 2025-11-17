@@ -11,14 +11,45 @@ interface HeaderProps {
 
 const Header = ({ onSearch, onFilter }: HeaderProps) => {
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const getUser = async () => {
+    const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      if (user) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        setProfile(profileData);
+      }
     };
-    getUser();
+    fetchUserData();
+
+    // Subscribe to profile changes
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user?.id}`,
+        },
+        (payload) => {
+          setProfile(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,11 +62,11 @@ const Header = ({ onSearch, onFilter }: HeaderProps) => {
     <header className="bg-card border-b border-border px-8 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-          {user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
+          {profile?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
         </div>
         <div>
           <p className="text-sm font-medium">
-            Olá, {user?.user_metadata?.full_name || "Usuário"}
+            Olá, {profile?.full_name || "Usuário"}
           </p>
         </div>
       </div>
