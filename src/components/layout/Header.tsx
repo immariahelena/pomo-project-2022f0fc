@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Filter } from "lucide-react";
 
 interface HeaderProps {
@@ -15,6 +16,8 @@ const Header = ({ onSearch, onFilter }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    let channel: any = null;
+    
     const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
@@ -26,29 +29,25 @@ const Header = ({ onSearch, onFilter }: HeaderProps) => {
           .eq("id", user.id)
           .single();
         setProfile(profileData);
+
+        // Set up subscription AFTER we have the user
+        channel = supabase
+          .channel('profile-changes')
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`,
+          }, (payload) => {
+            setProfile(payload.new);
+          })
+          .subscribe();
       }
     };
     fetchUserData();
 
-    // Subscribe to profile changes
-    const channel = supabase
-      .channel('profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user?.id}`,
-        },
-        (payload) => {
-          setProfile(payload.new);
-        }
-      )
-      .subscribe();
-
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
@@ -61,8 +60,13 @@ const Header = ({ onSearch, onFilter }: HeaderProps) => {
   return (
     <header className="bg-card border-b border-border px-8 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-          {profile?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
+        <div className="w-10 h-10 rounded-full overflow-hidden">
+          <Avatar className="w-full h-full">
+            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              {profile?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
         </div>
         <div>
           <p className="text-sm font-medium">
