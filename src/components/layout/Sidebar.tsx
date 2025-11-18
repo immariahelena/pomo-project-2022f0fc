@@ -75,6 +75,7 @@ const Sidebar = () => {
 
   const adminItems = [
     { icon: Shield, path: "/admin/users", label: "Admin" },
+    { icon: HelpCircle, path: "/admin-support", label: "Tickets" },
   ];
 
   return (
