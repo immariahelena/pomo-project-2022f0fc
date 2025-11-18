@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Video, Trophy, Bell, Settings, LogOut, Shield } from "lucide-react";
+import { Home, Video, Trophy, Bell, Settings, LogOut, Shield, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,7 @@ const Sidebar = () => {
     { icon: Video, path: "/projects", label: "Projetos" },
     { icon: Trophy, path: "/achievements", label: "Conquistas" },
     { icon: Bell, path: "/notifications", label: "Notificações", badge: unreadCount },
+    { icon: HelpCircle, path: "/support", label: "Suporte" },
   ];
 
   const adminItems = [
