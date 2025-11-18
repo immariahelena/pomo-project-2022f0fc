@@ -50,6 +50,26 @@ const AdminSupport = () => {
     }
     if (isAdmin) {
       fetchTickets();
+      
+      // Subscribe to realtime ticket updates
+      const channel = supabase
+        .channel('admin-tickets')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'support_tickets',
+          },
+          () => {
+            fetchTickets();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAdmin, roleLoading, navigate]);
 
