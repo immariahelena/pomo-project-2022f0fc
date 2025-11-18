@@ -70,7 +70,7 @@ const Sidebar = () => {
     { icon: Video, path: "/projects", label: "Projetos" },
     { icon: Trophy, path: "/achievements", label: "Conquistas" },
     { icon: Bell, path: "/notifications", label: "Notificações", badge: unreadCount },
-    { icon: HelpCircle, path: "/support", label: "Suporte" },
+    ...(isAdmin ? [] : [{ icon: HelpCircle, path: "/support", label: "Suporte" }]),
   ];
 
   const adminItems = [
